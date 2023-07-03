@@ -5,6 +5,6 @@ pluginManagement {
     }
 }
 
-rootProject.name = "forktest"
+rootProject.name = "Yuji"
 
-include("forktest-api", "forktest-server")
+include("yuji-api", "yuji-server")
