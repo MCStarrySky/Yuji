@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micalhl <micalhl@sina.cn>
+Date: Tue, 4 Jul 2023 10:18:03 +0800
+Subject: [PATCH] Better async scheduler
+
+
+diff --git a/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java b/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java
+index 66232a9f5cea31dc8046817c3c2a91695930e53f..afbdd95d30bfa3f6feb72978fd387abd72c4aa1f 100644
+--- a/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java
++++ b/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java
+@@ -10,6 +10,16 @@ import java.util.function.Consumer;
+  */
+ public interface AsyncScheduler {
+ 
++    // Yuji start
++    @NotNull ScheduledTask runNow(@NotNull Plugin plugin, @NotNull Runnable runnable);
++
++    @NotNull ScheduledTask runDelayed(@NotNull Plugin plugin, long delay, @NotNull TimeUnit unit, @NotNull Runnable runnable);
++
++    @NotNull ScheduledTask runAtFixedRate(@NotNull Plugin plugin, long initialDelay, long period,
++                                          @NotNull TimeUnit unit, @NotNull Runnable runnable);
++
++    // Yuji end
++
+     /**
+      * Schedules the specified task to be executed asynchronously immediately.
+      * @param plugin Plugin which owns the specified task.

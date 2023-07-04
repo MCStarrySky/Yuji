@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micalhl <micalhl@sina.cn>
+Date: Tue, 4 Jul 2023 10:18:25 +0800
+Subject: [PATCH] Better async scheduler
+
+
+diff --git a/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java b/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java
+index 4874ca2ddf6b7bf7b818f97cfbc59d349a69f5ce..a3e05c861c08298c6c104355e8f34f7f94f648f7 100644
+--- a/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java
++++ b/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java
+@@ -4,6 +4,7 @@ import ca.spottedleaf.concurrentutil.util.Validate;
+ import com.mojang.logging.LogUtils;
+ import org.bukkit.plugin.IllegalPluginAccessException;
+ import org.bukkit.plugin.Plugin;
++import org.jetbrains.annotations.NotNull;
+ import org.slf4j.Logger;
+ import java.util.Set;
+ import java.util.concurrent.ConcurrentHashMap;
+@@ -60,6 +61,7 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+ 
+     private final Set<AsyncScheduledTask> tasks = ConcurrentHashMap.newKeySet();
+ 
++
+     @Override
+     public ScheduledTask runNow(final Plugin plugin, final Consumer<ScheduledTask> task) {
+         Validate.notNull(plugin, "Plugin may not be null");
+@@ -119,6 +121,21 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+         return this.scheduleTimerTask(plugin, task, initialDelay, period, unit);
+     }
+ 
++    @Override
++    public @NotNull ScheduledTask runNow(@NotNull Plugin plugin, @NotNull Runnable runnable) {
++        return null;
++    }
++
++    @Override
++    public @NotNull ScheduledTask runDelayed(@NotNull Plugin plugin, long delay, @NotNull TimeUnit unit, @NotNull Runnable runnable) {
++        return null;
++    }
++
++    @Override
++    public @NotNull ScheduledTask runAtFixedRate(@NotNull Plugin plugin, long initialDelay, long period, @NotNull TimeUnit unit, @NotNull Runnable runnable) {
++        return null;
++    }
++
+     private AsyncScheduledTask scheduleTimerTask(final Plugin plugin, final Consumer<ScheduledTask> task, final long initialDelay,
+                                                  final long period, final TimeUnit unit) {
+         final AsyncScheduledTask ret = new AsyncScheduledTask(
+@@ -163,10 +180,12 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+ 
+         private final Plugin plugin;
+         private final long repeatDelay; // in ns
+-        private Consumer<ScheduledTask> run;
++        private Consumer<ScheduledTask> run; // Yuji
++        private Runnable r; // Yuji
+         private ScheduledFuture<?> delay;
+         private int state;
+         private long scheduleTarget;
++        private boolean runnable = false; // Yuji
+ 
+         public AsyncScheduledTask(final Plugin plugin, final long repeatDelay, final Consumer<ScheduledTask> run,
+                                   final ScheduledFuture<?> delay, final long firstTarget) {
+@@ -178,6 +197,19 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+             this.scheduleTarget = firstTarget;
+         }
+ 
++        // Yuji start
++        public AsyncScheduledTask(final Plugin plugin, final long repeatDelay, final Runnable r,
++                                  final ScheduledFuture<?> delay, final long firstTarget) {
++            this.plugin = plugin;
++            this.repeatDelay = repeatDelay;
++            this.r = r;
++            this.delay = delay;
++            this.state = delay == null ? STATE_SCHEDULED_EXECUTOR : STATE_ON_TIMER;
++            this.scheduleTarget = firstTarget;
++            this.runnable = true;
++        }
++        // Yuji end
++
+         private void setDelay(final ScheduledFuture<?> delay) {
+             this.delay = delay;
+             this.state = STATE_SCHEDULED_EXECUTOR;
+@@ -213,7 +245,13 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+             }
+ 
+             try {
+-                this.run.accept(this);
++                // Yuji start
++                if (runnable) {
++                    this.r.run();
++                } else {
++                    this.run.accept(this); // Folia - region threading
++                }
++                // Yuji end
+             } catch (final Throwable throwable) {
+                 this.plugin.getLogger().log(Level.WARNING, "Async task for " + this.plugin.getDescription().getFullName() + " generated an exception", throwable);
+             } finally {
+@@ -238,7 +276,13 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+                 }
+ 
+                 if (removeFromTasks) {
+-                    this.run = null;
++                    // Yuji start
++                    if (runnable) {
++                        this.r = null;
++                    } else {
++                        this.run = null; // Folia - region threading
++                    }
++                    // Yuji end
+                     FoliaAsyncScheduler.this.tasks.remove(this);
+                 }
+             }
+@@ -297,7 +341,13 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+             if (delay != null) {
+                 delay.cancel(false);
+             }
+-            this.run = null;
++            // Yuji start
++            if (runnable) {
++                this.r = null;
++            } else {
++                this.run = null; // Folia - region threading
++            }
++            // Yuji end
+             FoliaAsyncScheduler.this.tasks.remove(this);
+             return ret;
+         }
