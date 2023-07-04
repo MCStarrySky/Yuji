@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micalhl <micalhl@sina.cn>
+Date: Tue, 4 Jul 2023 11:46:36 +0800
+Subject: [PATCH] Introducing Async Runnable
+
+
+diff --git a/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java b/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java
+index a3e05c861c08298c6c104355e8f34f7f94f648f7..0234b98e240fc1137515f24950a1a31650b1fb70 100644
+--- a/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java
++++ b/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java
+@@ -63,7 +63,7 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+ 
+ 
+     @Override
+-    public ScheduledTask runNow(final Plugin plugin, final Consumer<ScheduledTask> task) {
++    public ScheduledTask runNowRunnable(final Plugin plugin, final Consumer<ScheduledTask> task) {
+         Validate.notNull(plugin, "Plugin may not be null");
+         Validate.notNull(task, "Task may not be null");
+ 
+@@ -85,8 +85,8 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+     }
+ 
+     @Override
+-    public ScheduledTask runDelayed(final Plugin plugin, final Consumer<ScheduledTask> task, final long delay,
+-                                    final TimeUnit unit) {
++    public ScheduledTask runDelayedRunnable(final Plugin plugin, final Consumer<ScheduledTask> task, final long delay,
++                                            final TimeUnit unit) {
+         Validate.notNull(plugin, "Plugin may not be null");
+         Validate.notNull(task, "Task may not be null");
+         Validate.notNull(unit, "Time unit may not be null");
+@@ -102,8 +102,8 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+     }
+ 
+     @Override
+-    public ScheduledTask runAtFixedRate(final Plugin plugin, final Consumer<ScheduledTask> task, final long initialDelay,
+-                                        final long period, final TimeUnit unit) {
++    public ScheduledTask runAtFixedRateRunnable(final Plugin plugin, final Consumer<ScheduledTask> task, final long initialDelay,
++                                                final long period, final TimeUnit unit) {
+         Validate.notNull(plugin, "Plugin may not be null");
+         Validate.notNull(task, "Task may not be null");
+         Validate.notNull(unit, "Time unit may not be null");
+@@ -122,17 +122,17 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+     }
+ 
+     @Override
+-    public @NotNull ScheduledTask runNow(@NotNull Plugin plugin, @NotNull Runnable runnable) {
++    public @NotNull ScheduledTask runNowRunnable(@NotNull Plugin plugin, @NotNull Runnable runnable) {
+         return null;
+     }
+ 
+     @Override
+-    public @NotNull ScheduledTask runDelayed(@NotNull Plugin plugin, long delay, @NotNull TimeUnit unit, @NotNull Runnable runnable) {
++    public @NotNull ScheduledTask runDelayedRunnable(@NotNull Plugin plugin, long delay, @NotNull TimeUnit unit, @NotNull Runnable runnable) {
+         return null;
+     }
+ 
+     @Override
+-    public @NotNull ScheduledTask runAtFixedRate(@NotNull Plugin plugin, long initialDelay, long period, @NotNull TimeUnit unit, @NotNull Runnable runnable) {
++    public @NotNull ScheduledTask runAtFixedRateRunnable(@NotNull Plugin plugin, long initialDelay, long period, @NotNull TimeUnit unit, @NotNull Runnable runnable) {
+         return null;
+     }
+ 

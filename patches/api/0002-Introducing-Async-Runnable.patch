@@ -1,0 +1,140 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micalhl <micalhl@sina.cn>
+Date: Tue, 4 Jul 2023 11:46:21 +0800
+Subject: [PATCH] Introducing Async Runnable
+
+
+diff --git a/src/main/java/com/mcstarrysky/yuji/scheduler/AsyncRunnable.java b/src/main/java/com/mcstarrysky/yuji/scheduler/AsyncRunnable.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..e63357488d20cd1c4d59fab85291be56a857b9a4
+--- /dev/null
++++ b/src/main/java/com/mcstarrysky/yuji/scheduler/AsyncRunnable.java
+@@ -0,0 +1,76 @@
++package com.mcstarrysky.yuji.scheduler;
++
++import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
++import org.bukkit.Bukkit;
++import org.bukkit.plugin.Plugin;
++import org.jetbrains.annotations.NotNull;
++
++import java.util.concurrent.TimeUnit;
++
++// Yuji - Better Async Scheduler
++public abstract class AsyncRunnable implements Runnable {
++    private ScheduledTask task;
++
++    public Plugin getOwningPlugin() {
++        checkScheduled();
++        return task.getOwningPlugin();
++    }
++
++    public boolean isCancelled() {
++        checkScheduled();
++        return task.isCancelled();
++    }
++
++    public boolean isRepeating() {
++        checkScheduled();
++        return task.isRepeatingTask();
++    }
++
++    public ScheduledTask.ExecutionState getExecutionState() {
++        checkScheduled();
++        return task.getExecutionState();
++    }
++
++    public ScheduledTask.CancelledState cancel() {
++        checkScheduled();
++        return task.cancel();
++    }
++
++    public ScheduledTask getTask() {
++        checkScheduled();
++        return task;
++    }
++
++    private ScheduledTask setupTask(@NotNull final ScheduledTask task) {
++        this.task = task;
++        return task;
++    }
++
++    private void checkScheduled() {
++        if (task == null) {
++            throw new IllegalStateException("Not scheduled yet");
++        }
++    }
++
++    private void checkNotYetScheduled() {
++        if (task != null) {
++            throw new IllegalStateException("Already scheduled");
++        }
++    }
++
++    public @NotNull ScheduledTask runNow(@NotNull Plugin plugin) {
++        checkNotYetScheduled();
++        return setupTask(Bukkit.getAsyncScheduler().runNowRunnable(plugin, this));
++    }
++
++    public @NotNull ScheduledTask runDelayed(@NotNull Plugin plugin, long delay, @NotNull TimeUnit unit) {
++        checkNotYetScheduled();
++        return setupTask(Bukkit.getAsyncScheduler().runDelayedRunnable(plugin, delay, unit, this));
++    }
++
++    public @NotNull ScheduledTask runAtFixedRate(@NotNull Plugin plugin, long initialDelay, long period,
++                                                  @NotNull TimeUnit unit) {
++        checkNotYetScheduled();
++        return setupTask(Bukkit.getAsyncScheduler().runAtFixedRateRunnable(plugin, initialDelay, period, unit, this));
++    }
++}
+diff --git a/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java b/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java
+index afbdd95d30bfa3f6feb72978fd387abd72c4aa1f..c1778d47726ee5767fe89e37de4e515df67f755c 100644
+--- a/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java
++++ b/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java
+@@ -11,12 +11,12 @@ import java.util.function.Consumer;
+ public interface AsyncScheduler {
+ 
+     // Yuji start
+-    @NotNull ScheduledTask runNow(@NotNull Plugin plugin, @NotNull Runnable runnable);
++    @NotNull ScheduledTask runNowRunnable(@NotNull Plugin plugin, @NotNull Runnable runnable);
+ 
+-    @NotNull ScheduledTask runDelayed(@NotNull Plugin plugin, long delay, @NotNull TimeUnit unit, @NotNull Runnable runnable);
++    @NotNull ScheduledTask runDelayedRunnable(@NotNull Plugin plugin, long delay, @NotNull TimeUnit unit, @NotNull Runnable runnable);
+ 
+-    @NotNull ScheduledTask runAtFixedRate(@NotNull Plugin plugin, long initialDelay, long period,
+-                                          @NotNull TimeUnit unit, @NotNull Runnable runnable);
++    @NotNull ScheduledTask runAtFixedRateRunnable(@NotNull Plugin plugin, long initialDelay, long period,
++                                                  @NotNull TimeUnit unit, @NotNull Runnable runnable);
+ 
+     // Yuji end
+ 
+@@ -26,7 +26,7 @@ public interface AsyncScheduler {
+      * @param task Specified task.
+      * @return The {@link ScheduledTask} that represents the scheduled task.
+      */
+-    @NotNull ScheduledTask runNow(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task);
++    @NotNull ScheduledTask runNowRunnable(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task);
+ 
+     /**
+      * Schedules the specified task to be executed asynchronously after the time delay has passed.
+@@ -36,8 +36,8 @@ public interface AsyncScheduler {
+      * @param unit The time unit for the time delay.
+      * @return The {@link ScheduledTask} that represents the scheduled task.
+      */
+-    @NotNull ScheduledTask runDelayed(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task, long delay,
+-                                             @NotNull TimeUnit unit);
++    @NotNull ScheduledTask runDelayedRunnable(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task, long delay,
++                                              @NotNull TimeUnit unit);
+ 
+     /**
+      * Schedules the specified task to be executed asynchronously after the initial delay has passed,
+@@ -49,8 +49,8 @@ public interface AsyncScheduler {
+      * @param unit The time unit for the initial delay and period.
+      * @return The {@link ScheduledTask} that represents the scheduled task.
+      */
+-    @NotNull ScheduledTask runAtFixedRate(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task,
+-                                                 long initialDelay, long period, @NotNull TimeUnit unit);
++    @NotNull ScheduledTask runAtFixedRateRunnable(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task,
++                                                  long initialDelay, long period, @NotNull TimeUnit unit);
+ 
+     /**
+      * Attempts to cancel all tasks scheduled by the specified plugin.

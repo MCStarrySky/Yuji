@@ -31,6 +31,8 @@ dependencies {
 
 allprojects {
     apply(plugin = "java")
+    apply(plugin = "maven-publish")
+
 
     java {
         toolchain {
@@ -108,4 +110,40 @@ tasks.register("kaiijuRefLatest") {
             into(project.file(file).parent)
         }
     }
+}
+
+allprojects {
+    publishing {
+        repositories {
+            maven("https://repo.tabooproject.org/repository/releases") {
+                name = "yuji"
+                credentials {
+                    username = project.findProperty("taboolibUsername").toString()
+                    password = project.findProperty("taboolibPassword").toString()
+                }
+                authentication {
+                    create<BasicAuthentication>("basic")
+                }
+            }
+        }
+    }
+}
+
+publishing {
+    publications.create<MavenPublication>("devBundle") {
+        artifact(tasks.generateDevelopmentBundle) {
+            artifactId = "dev-bundle"
+        }
+    }
+}
+
+tasks.generateDevelopmentBundle {
+    apiCoordinates.set("com.mcstarrysky.yuji:yuji-api")
+    mojangApiCoordinates.set("io.papermc.paper:paper-mojangapi")
+    libraryRepositories.set(
+        listOf(
+            "https://repo.maven.apache.org/maven2/",
+            paperMavenPublicUrl
+        )
+    )
 }
