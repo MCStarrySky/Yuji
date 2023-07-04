@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micalhl <micalhl@sina.cn>
+Date: Tue, 4 Jul 2023 11:55:03 +0800
+Subject: [PATCH] Fix Async Runnable
+
+
+diff --git a/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java b/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java
+index c1778d47726ee5767fe89e37de4e515df67f755c..451b7d800b316b622d35e8baeb8e4e72836a2c09 100644
+--- a/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java
++++ b/src/main/java/io/papermc/paper/threadedregions/scheduler/AsyncScheduler.java
+@@ -26,7 +26,7 @@ public interface AsyncScheduler {
+      * @param task Specified task.
+      * @return The {@link ScheduledTask} that represents the scheduled task.
+      */
+-    @NotNull ScheduledTask runNowRunnable(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task);
++    @NotNull ScheduledTask runNow(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task);
+ 
+     /**
+      * Schedules the specified task to be executed asynchronously after the time delay has passed.
+@@ -36,7 +36,7 @@ public interface AsyncScheduler {
+      * @param unit The time unit for the time delay.
+      * @return The {@link ScheduledTask} that represents the scheduled task.
+      */
+-    @NotNull ScheduledTask runDelayedRunnable(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task, long delay,
++    @NotNull ScheduledTask runDelayed(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task, long delay,
+                                               @NotNull TimeUnit unit);
+ 
+     /**
+@@ -49,7 +49,7 @@ public interface AsyncScheduler {
+      * @param unit The time unit for the initial delay and period.
+      * @return The {@link ScheduledTask} that represents the scheduled task.
+      */
+-    @NotNull ScheduledTask runAtFixedRateRunnable(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task,
++    @NotNull ScheduledTask runAtFixedRate(@NotNull Plugin plugin, @NotNull Consumer<ScheduledTask> task,
+                                                   long initialDelay, long period, @NotNull TimeUnit unit);
+ 
+     /**

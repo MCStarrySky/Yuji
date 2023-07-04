@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micalhl <micalhl@sina.cn>
+Date: Tue, 4 Jul 2023 11:54:54 +0800
+Subject: [PATCH] Fix Async Runnable
+
+
+diff --git a/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java b/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java
+index 0234b98e240fc1137515f24950a1a31650b1fb70..3fc9e05758b42771b1bceee84d5ea0683a1a62bc 100644
+--- a/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java
++++ b/src/main/java/io/papermc/paper/threadedregions/scheduler/FoliaAsyncScheduler.java
+@@ -63,7 +63,7 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+ 
+ 
+     @Override
+-    public ScheduledTask runNowRunnable(final Plugin plugin, final Consumer<ScheduledTask> task) {
++    public ScheduledTask runNow(final Plugin plugin, final Consumer<ScheduledTask> task) {
+         Validate.notNull(plugin, "Plugin may not be null");
+         Validate.notNull(task, "Task may not be null");
+ 
+@@ -84,8 +84,9 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+         return ret;
+     }
+ 
++
+     @Override
+-    public ScheduledTask runDelayedRunnable(final Plugin plugin, final Consumer<ScheduledTask> task, final long delay,
++    public ScheduledTask runDelayed(final Plugin plugin, final Consumer<ScheduledTask> task, final long delay,
+                                             final TimeUnit unit) {
+         Validate.notNull(plugin, "Plugin may not be null");
+         Validate.notNull(task, "Task may not be null");
+@@ -102,7 +103,7 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+     }
+ 
+     @Override
+-    public ScheduledTask runAtFixedRateRunnable(final Plugin plugin, final Consumer<ScheduledTask> task, final long initialDelay,
++    public ScheduledTask runAtFixedRate(final Plugin plugin, final Consumer<ScheduledTask> task, final long initialDelay,
+                                                 final long period, final TimeUnit unit) {
+         Validate.notNull(plugin, "Plugin may not be null");
+         Validate.notNull(task, "Task may not be null");
+@@ -121,20 +122,64 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+         return this.scheduleTimerTask(plugin, task, initialDelay, period, unit);
+     }
+ 
++    // Yuji start
+     @Override
+     public @NotNull ScheduledTask runNowRunnable(@NotNull Plugin plugin, @NotNull Runnable runnable) {
+-        return null;
++        Validate.notNull(plugin, "Plugin may not be null");
++        Validate.notNull(runnable, "Runnable may not be null");
++
++        if (!plugin.isEnabled()) {
++            throw new IllegalPluginAccessException("Plugin attempted to register task while disabled");
++        }
++
++        final AsyncScheduledTask ret = new AsyncScheduledTask(plugin, -1L, runnable, null, -1L);
++
++        this.tasks.add(ret);
++        this.executors.execute(ret);
++
++        if (!plugin.isEnabled()) {
++            // handle race condition where plugin is disabled asynchronously
++            ret.cancel();
++        }
++
++        return ret;
+     }
+ 
+     @Override
+     public @NotNull ScheduledTask runDelayedRunnable(@NotNull Plugin plugin, long delay, @NotNull TimeUnit unit, @NotNull Runnable runnable) {
+-        return null;
++        Validate.notNull(plugin, "Plugin may not be null");
++        Validate.notNull(runnable, "Runnable may not be null");
++        Validate.notNull(unit, "Time unit may not be null");
++        if (delay < 0L) {
++            throw new IllegalArgumentException("Delay may not be < 0");
++        }
++
++        if (!plugin.isEnabled()) {
++            throw new IllegalPluginAccessException("Plugin attempted to register task while disabled");
++        }
++
++        return this.scheduleTimerTaskRunnable(plugin, runnable, delay, -1L, unit);
+     }
+ 
+     @Override
+     public @NotNull ScheduledTask runAtFixedRateRunnable(@NotNull Plugin plugin, long initialDelay, long period, @NotNull TimeUnit unit, @NotNull Runnable runnable) {
+-        return null;
++        Validate.notNull(plugin, "Plugin may not be null");
++        Validate.notNull(runnable, "Runnable may not be null");
++        Validate.notNull(unit, "Time unit may not be null");
++        if (initialDelay < 0L) {
++            throw new IllegalArgumentException("Initial delay may not be < 0");
++        }
++        if (period <= 0L) {
++            throw new IllegalArgumentException("Period may not be <= 0");
++        }
++
++        if (!plugin.isEnabled()) {
++            throw new IllegalPluginAccessException("Plugin attempted to register task while disabled");
++        }
++
++        return this.scheduleTimerTaskRunnable(plugin, runnable, initialDelay, period, unit);
+     }
++    // Yuji end
+ 
+     private AsyncScheduledTask scheduleTimerTask(final Plugin plugin, final Consumer<ScheduledTask> task, final long initialDelay,
+                                                  final long period, final TimeUnit unit) {
+@@ -158,6 +203,30 @@ public final class FoliaAsyncScheduler implements AsyncScheduler {
+         return ret;
+     }
+ 
++    // Yuji start
++    private AsyncScheduledTask scheduleTimerTaskRunnable(final Plugin plugin, final Runnable runnable, final long initialDelay,
++                                                 final long period, final TimeUnit unit) {
++        final AsyncScheduledTask ret = new AsyncScheduledTask(
++            plugin, period <= 0 ? period : unit.toNanos(period), runnable, null,
++            System.nanoTime() + unit.toNanos(initialDelay)
++        );
++
++        synchronized (ret) {
++            // even though ret is not published, we need to synchronise while scheduling to avoid a race condition
++            // for when a scheduled task immediately executes before we update the delay field and state field
++            ret.setDelay(this.timerThread.schedule(ret, initialDelay, unit));
++            this.tasks.add(ret);
++        }
++
++        if (!plugin.isEnabled()) {
++            // handle race condition where plugin is disabled asynchronously
++            ret.cancel();
++        }
++
++        return ret;
++    }
++    // Yuji end
++
+     @Override
+     public void cancelTasks(final Plugin plugin) {
+         Validate.notNull(plugin, "Plugin may not be null");
