@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micalhl <micalhl@sina.cn>
+Date: Tue, 4 Jul 2023 16:45:02 +0800
+Subject: [PATCH] Improve API
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
+index bcb85a4253b5e44b78cbadfb16c3bf0d47d7369e..333deb3f93cc1e6db2e43a0ec37d35646a7856e9 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
+@@ -577,6 +577,15 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
+ 
+     @Override
+     public boolean teleport(Location location, TeleportCause cause, io.papermc.paper.entity.TeleportFlag... flags) {
++        // Yuji start - Improve API
++        try {
++            return teleportAsync(location, cause).get();
++        } catch (Throwable ex) {
++            ex.printStackTrace();
++            return false;
++        }
++        // Yuji end
++        /*
+         // Folia start - region threading
+         if (true) {
+             throw new UnsupportedOperationException("Must use teleportAsync while in region threading");
+@@ -621,6 +630,8 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
+         this.entity.setYHeadRot(location.getYaw());
+ 
+         return true;
++
++         */
+     }
+ 
+     @Override
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+index 43c899d466bfffec4ea5ce1a4ed988f9ce4ecf42..8c59b7d4c939fda262804b4b600094b4cdd7d6f3 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+@@ -682,20 +682,25 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+ 
+         if (this.getHandle().connection == null) return;
+ 
+-        // Paper start - improve chat handling
+-        if (ServerGamePacketListenerImpl.isChatMessageIllegal(msg)) {
+-            this.getHandle().connection.disconnect(Component.translatable("multiplayer.disconnect.illegal_characters"), org.bukkit.event.player.PlayerKickEvent.Cause.ILLEGAL_CHARACTERS); // Paper - kick event causes
+-        } else {
+-            if (msg.startsWith("/")) {
+-                this.getHandle().connection.handleCommand(msg);
++        // Yuji start - Improve API
++        if (msg.startsWith("/")) {
++            performCommand(msg.substring(1));
++        } else { // Yuji end
++            // Paper start - improve chat handling
++            if (ServerGamePacketListenerImpl.isChatMessageIllegal(msg)) {
++                this.getHandle().connection.disconnect(Component.translatable("multiplayer.disconnect.illegal_characters"), org.bukkit.event.player.PlayerKickEvent.Cause.ILLEGAL_CHARACTERS); // Paper - kick event causes
+             } else {
+-                final PlayerChatMessage playerChatMessage = PlayerChatMessage.system(msg).withResult(new net.minecraft.network.chat.ChatDecorator.ModernResult(Component.literal(msg), true, false));
+-                // TODO chat decorating
+-                // TODO text filtering
+-                this.getHandle().connection.chat(msg, playerChatMessage, false);
++                if (msg.startsWith("/")) {
++                    this.getHandle().connection.handleCommand(msg);
++                } else {
++                    final PlayerChatMessage playerChatMessage = PlayerChatMessage.system(msg).withResult(new net.minecraft.network.chat.ChatDecorator.ModernResult(Component.literal(msg), true, false));
++                    // TODO chat decorating
++                    // TODO text filtering
++                    this.getHandle().connection.chat(msg, playerChatMessage, false);
++                }
+             }
++            // Paper end
+         }
+-        // Paper end
+     }
+ 
+     @Override
+@@ -1291,6 +1296,15 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+ 
+     @Override
+     public boolean teleport(Location location, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause cause, io.papermc.paper.entity.TeleportFlag... flags) {
++        // Yuji start - Improve API
++        try {
++            return teleportAsync(location, cause).get();
++        } catch (Throwable ex) {
++            ex.printStackTrace();
++            return false;
++        }
++        // Yuji end
++        /*
+         // Folia start - region threading
+         if (true) {
+             throw new UnsupportedOperationException("Must use teleportAsync while in region threading");
+@@ -1385,6 +1399,8 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+             server.getHandle().respawn(entity, toWorld, true, to, !toWorld.paperConfig().environment.disableTeleportationSuffocationCheck, null); // Paper
+         }
+         return true;
++
++         */
+     }
+ 
+     @Override
