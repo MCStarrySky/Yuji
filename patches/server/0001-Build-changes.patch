@@ -26,6 +26,57 @@ index d24f5fdc6a8c34774933a5cd8bfed8571299bd35..9125d3d272b4f8dfe4a2b2fbf45762d6
              "Implementation-Vendor" to date, // Paper
              "Specification-Title" to "Bukkit",
              "Specification-Version" to project.version,
+diff --git a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
+index 95bc514df2022dde265b84490d3d0db002685024..82717e788ac255b72af86edce40a4a7196caaba2 100644
+--- a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
++++ b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
+@@ -21,7 +21,7 @@ public class PaperVersionFetcher implements VersionFetcher {
+     private static final java.util.regex.Pattern VER_PATTERN = java.util.regex.Pattern.compile("^([0-9\\.]*)\\-.*R"); // R is an anchor, will always give '-R' at end
+     private static final String GITHUB_BRANCH_NAME = "master";
+     // Kaiiju start
+-    private static final String DOWNLOAD_PAGE = "https://github.com/KaiijuMC/Kaiiju/releases";
++    private static final String DOWNLOAD_PAGE = "https://github.com/MCStarrySky/Yuji"; // Yuji
+     private static int distance = -2; public int distance() { return distance; }
+     // Kaiiju end
+     private static @Nullable String mcVer;
+@@ -33,8 +33,9 @@ public class PaperVersionFetcher implements VersionFetcher {
+     @Nonnull
+     @Override
+     public Component getVersionMessage(@Nonnull String serverVersion) {
+-        String[] parts = serverVersion.substring("git-Kaiiju-".length()).split("[-\\s]"); // Folia // Kaiiju
+-        final Component updateMessage = getUpdateStatusMessage("KaiijuMC/Kaiiju", "ver/" + getMinecraftVersion(), parts[0]); // Folia // Kaiiju
++        String[] parts = serverVersion.substring("git-Yuji-".length()).split("[-\\s]"); // Folia // Kaiiju // Yuji
++        //final Component updateMessage = getUpdateStatusMessage("MCStarrySky/Yuji", "ver/" + getMinecraftVersion(), parts[0]); // Folia // Kaiiju
++        final Component updateMessage = getUpdateStatusMessage("MCStarrySky/Yuji", "main", parts[0]); // Folia // Kaiiju
+         final Component history = getHistory();
+ 
+         return history != null ? TextComponent.ofChildren(updateMessage, Component.newline(), history) : updateMessage;
+@@ -47,7 +48,7 @@ public class PaperVersionFetcher implements VersionFetcher {
+                 String result = matcher.group();
+                 mcVer = result.substring(0, result.length() - 2); // strip 'R' anchor and trailing '-'
+             } else {
+-                org.bukkit.Bukkit.getLogger().warning("Unable to match version to pattern! Report to KaiijuMC!"); // Kaiiju
++                org.bukkit.Bukkit.getLogger().warning("Unable to match version to pattern! Report to MCStarrySky!"); // Kaiiju // Yuji
+                 org.bukkit.Bukkit.getLogger().warning("Pattern: " + VER_PATTERN.toString());
+                 org.bukkit.Bukkit.getLogger().warning("Version: " + org.bukkit.Bukkit.getBukkitVersion());
+             }
+@@ -81,11 +82,11 @@ public class PaperVersionFetcher implements VersionFetcher {
+                 return Component.text("Unknown version", NamedTextColor.YELLOW);
+             default:
+                 return Component.text("You are " + distance + " version(s) behind", NamedTextColor.YELLOW)
+-                        .append(Component.newline())
+-                        .append(Component.text("Download the new version at: ")
+-                                .append(Component.text(DOWNLOAD_PAGE, NamedTextColor.GOLD)
+-                                        .hoverEvent(Component.text("Click to open", NamedTextColor.WHITE))
+-                                        .clickEvent(ClickEvent.openUrl(DOWNLOAD_PAGE))));
++                    .append(Component.newline())
++                    .append(Component.text("Download the new version at: ")
++                        .append(Component.text(DOWNLOAD_PAGE, NamedTextColor.GOLD)
++                            .hoverEvent(Component.text("Click to open", NamedTextColor.WHITE))
++                            .clickEvent(ClickEvent.openUrl(DOWNLOAD_PAGE))));
+         }
+     }
+ 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
 index fd916a28e7fc763d4daba876ccb31f4d3a58440d..ace0106dd4c420a016f4b5d58eb85c16fa08a98b 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
